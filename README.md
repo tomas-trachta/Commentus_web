@@ -8,7 +8,7 @@ This project was created by [@Ponny159 (T. Trachta)](https://www.github.com/ponn
 
 ## Preview
 
-![Commentus_web preview](https://github.com/Ponny159/Commentus/blob/main/Commentus_web/Images/Preview.png)
+![Commentus_web preview](https://github.com/Ponny159/Commentus_web/blob/main/Commentus_web/Images/Preview.png)
 
 ## Technologies
 
