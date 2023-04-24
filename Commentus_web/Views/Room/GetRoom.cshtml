@@ -52,15 +52,41 @@
                                 <div class="col-auto">@message.User.Name</div>
                             </div>
                         </div>
-                        <div class="col-auto p-0">
-                            <span>
-                                @{
-                                    byte[] messageBytes = message.Message;
-                                    string messageString = Encoding.UTF8.GetString(messageBytes);
+                        @{
+                            byte[] binaryData = message.Message;
+                            string messageString = Encoding.UTF8.GetString(binaryData);
+
+                            if ((binaryData.Length > 3 && binaryData[0] == 0xFF && binaryData[1] == 0xD8
+                            && binaryData[binaryData.Length - 2] == 0xFF && binaryData[binaryData.Length - 1] == 0xD9)
+                            || (binaryData[0] == 137 && binaryData[1] == 80 && binaryData[2] == 78 && binaryData[3] == 71
+                            && binaryData[4] == 13 && binaryData[5] == 10 && binaryData[6] == 26 && binaryData[7] == 10))
+                            {
+                                string image = binaryData != null ? Convert.ToBase64String(binaryData) : "";
+                                string imageUrl = string.Format("data:image/png;base64,{0}", Convert.ToBase64String(binaryData));
+
+                                <div class="col-auto p-0">
+                                    <img src="@imageUrl" />
+                                </div>
+                            }
+                            else
+                            {
+                                string URIPattern = @"^(?:\w+:)?\/\/([^\s\.]+\.\S{2}|localhost[\:?\d]*)\S*$";
+                                if (System.Text.RegularExpressions.Regex.IsMatch(messageString, URIPattern))
+                                {
+                                    <div class="col-auto p-0">
+                                        <img src="@messageString" />
+                                    </div>
                                 }
-                                @messageString
-                            </span>
-                        </div>
+                                else
+                                {
+                                    <div class="col-auto p-0">
+                                        <span>
+                                            @messageString
+                                        </span>
+                                    </div>
+                                }
+                            }
+                        }
                     </div>
                 }
             </div>
