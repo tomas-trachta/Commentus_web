@@ -1,0 +1,16 @@
+﻿@model User
+
+@{
+    ViewData["Title"] = "Profile";
+}
+
+<h1>User name: @if (Context.Session.GetString("Name") != null)
+    {
+        @Context.Session.GetString("Name")
+    }
+</h1>
+<h1>Is Admin: @if (Context.Session.GetInt32("IsAdmin") != null)
+    {
+        @Convert.ToBoolean(Context.Session.GetInt32("IsAdmin")).ToString()
+    }
+</h1>

@@ -1,0 +1,12 @@
+﻿@model Commentus_web.Models.Task
+
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<div class="row w-100 m-0">
+    <h1 class="justify-content-center align-items-center d-flex m-0">@Model.Name</h1>
+</div>
+<div class="row w-100 d-flex justify-content-center align-items-center m-0" style="height: calc(100vh - 168px);">
+    <div class="p-1 d-flex flex-column align-items-center h-100 border border-dark m-0" style="width:98%;">@Html.Raw(System.Web.HttpUtility.HtmlDecode(Model.Description))</div>
+</div>

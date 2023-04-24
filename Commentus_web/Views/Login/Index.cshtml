@@ -1,0 +1,33 @@
+﻿@model UserModel
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+
+<form class="w-100 justify-content-center align-items-center d-flex flex-column h-100" asp-action="login">
+    <h1 class="display-4 text-primary">Login</h1>
+    <div class="input-group mb-3 w-50">
+        <div class="input-group-prepend">
+            <span class="input-group-text" id="inputGroup-sizing-default">Name</span>
+        </div>
+        <input asp-for="Name" type="text" class="form-control" aria-label="Default" aria-describedby="inputGroup-sizing-default"><br />
+    </div>
+    <div class="input-group mb-3">
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+    <div class="input-group mb-3 w-50">
+        <div class="input-group-prepend">
+            <span class="input-group-text" id="inputGroup-sizing-default">Password</span>
+        </div>
+        <input asp-for="Password" type="password" class="form-control" aria-label="Default" aria-describedby="inputGroup-sizing-default"><br />
+    </div>
+    <div class="input-group mb-3">
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+    <button class="btn btn-primary" type="submit">Submit</button><br/>
+    <p class="text-danger">@ViewBag.ErrorMessage</p>
+</form>
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

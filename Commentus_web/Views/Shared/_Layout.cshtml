@@ -1,0 +1,105 @@
+﻿@using Microsoft.AspNetCore.Http
+@using Microsoft.EntityFrameworkCore;
+
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Commentus</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Commentus_web.styles.css" asp-append-version="true" />
+</head>
+<body class="h-100 p-0 m-0">
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Commentus</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Login" asp-action="Index">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Register" asp-action="Index">Register</a>
+                        </li>
+                        @if (Context.Session.GetInt32("IsLoggedIn") == 1)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Profile" asp-action="Index">Profile</a>
+                            </li>
+                            @using(var context = new TestContext())
+                            {
+                                if (Context.Session.GetInt32("IsAdmin") != 1)
+                                {
+                                    <div class="dropdown">
+                                        <button class="btn bg-white border-1 border-dark text-black dropdown-toggle" id="dropdownMenuButton" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            Rooms
+                                        </button>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                            @foreach (var item in context.RoomsMembers.Include(r => r.Room).Where(member => member.User.Name == Context.Session.GetString("Name")))
+                                            {
+                                                <a class="dropdown-item" asp-controller="Room" asp-route-RoomsName="@item.Room.Name" asp-action="GetRoom">@item.Room.Name</a>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="dropdown">
+                                        <button class="btn bg-white border-1 border-dark text-black dropdown-toggle" id="dropdownMenuButton" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            Rooms
+                                        </button>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                            @foreach (var item in context.Rooms)
+                                            {
+                                                <a class="dropdown-item" asp-controller="Room" asp-route-RoomsName="@item.Name" asp-action="GetRoom">@item.Name</a>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        }
+
+                        @if (Context.Session.GetInt32("IsAdmin") == 1)
+                        {
+                            <div class="dropdown ms-auto me-5">
+                                <button class="btn btn-primary dropdown-toggle" style="width:10vw;" id="dropdownMenuButton" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Options
+                                </button>
+                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                    <a class="dropdown-item" href="#">Add room <br> <small>not implemented yet</small></a>
+                                    <a class="dropdown-item" href="#">Give admin privileges <br> <small>not implemented yet</small></a>
+                                </div>
+                            </div>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container-fluid m-0 p-0" style="height: calc(100vh - 120px);">
+        <main role="main" class="h-100">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2023 - Commentus - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
