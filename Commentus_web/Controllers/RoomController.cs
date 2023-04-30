@@ -8,8 +8,8 @@ namespace Commentus_web.Controllers
 {
     public class RoomController : Controller
     {
-        public static DateTime messageTimestamp { get; set; }
-        public static DateTime tasksTimestamp { get; set; }
+        public static DateTime MessageTimestamp { get; set; }
+        public static DateTime TasksTimestamp { get; set; }
         public static Room? Room { get; set; }
         public static User? User { get; set; }
 
@@ -28,16 +28,45 @@ namespace Commentus_web.Controllers
             model.Room = Context.Rooms.Where(r => r.Name == RoomsName).FirstOrDefault();
             model.Members = Context.RoomsMembers.Include(m => m.Room).Where(m => m.Room.Name == RoomsName).Include(m => m.User);
             model.Messages = Context.RoomsMessages.Include(m => m.User).Include(m => m.Room).Where(m => m.Room.Name == RoomsName);
-            model.Tasks = Context.TasksSolvers.Include(t => t.User).Include(t => t.Task)
-                                               .Where(t => t.User.Name == HttpContext.Session.GetString("Name"))
-                                               .Where(t => t.Task.RoomsId ==
-                                                     (Context.Rooms.Where(r => r.Name == RoomsName).FirstOrDefault()).Id);
+
+            if (HttpContext.Session.GetInt32("IsAdmin") == 1)
+            {
+                var tasksolvers = Context.TasksSolvers.Include(t => t.Task).Where(t => t.Task.RoomsId ==
+                                                         (Context.Rooms.Where(r => r.Name == RoomsName).FirstOrDefault()).Id)
+                                                    .OrderBy(t => t.TaskId);
+
+                List<TasksSolver> taskslist = new List<TasksSolver>();
+
+                if (tasksolvers.Any()) {
+                    int taskid = tasksolvers.First().TaskId;
+                    taskslist.Add(tasksolvers.First());
+
+                    foreach (var task in tasksolvers)
+                    {
+                        if (task.TaskId == taskid)
+                        {
+                            continue;
+                        }
+
+                        taskid = task.TaskId;
+                        taskslist.Add(task);
+                    }
+                }
+                model.Tasks = taskslist.AsQueryable();
+            }
+            else
+            {
+                model.Tasks = Context.TasksSolvers.Include(t => t.User).Include(t => t.Task)
+                                                   .Where(t => t.User.Name == HttpContext.Session.GetString("Name"))
+                                                   .Where(t => t.Task.RoomsId ==
+                                                         (Context.Rooms.Where(r => r.Name == RoomsName).FirstOrDefault()).Id);
+            }
 
             if(model.Messages.Any())
-                RoomController.messageTimestamp = model.Messages.OrderBy(t => t.Id).Last().Timestamp;
+                RoomController.MessageTimestamp = model.Messages.OrderBy(t => t.Id).Last().Timestamp;
 
             if (model.Tasks.Any())
-                RoomController.tasksTimestamp = model.Tasks.Include(t => t.Task).OrderBy(t => t.Task.Timestamp).Last().Task.Timestamp;
+                RoomController.TasksTimestamp = model.Tasks.Include(t => t.Task).OrderBy(t => t.Task.Timestamp).Last().Task.Timestamp;
 
             if (model.Members.Any())
                 RoomController.User = Context.Users.Where(m => m.Name == HttpContext.Session.GetString("Name")).FirstOrDefault();
@@ -63,11 +92,11 @@ namespace Commentus_web.Controllers
             var messages = new List<RoomsMessage>();
             messages = Context.RoomsMessages.Include(m => m.User).Include(m => m.Room)
                                                 .Where(m => m.Room.Name == RoomController.Room.Name 
-                                                && m.Timestamp > RoomController.messageTimestamp).ToList();
+                                                && m.Timestamp > RoomController.MessageTimestamp).ToList();
 
             if (messages.Any())
             {
-                RoomController.messageTimestamp = messages.Last().Timestamp;
+                RoomController.MessageTimestamp = messages.Last().Timestamp;
                 string rString = "";
 
                 foreach(var message in messages)
@@ -105,18 +134,18 @@ namespace Commentus_web.Controllers
                                                .Where(t => t.User.Name == HttpContext.Session.GetString("Name"))
                                                .Where(t => t.Task.RoomsId ==
                                                      (Context.Rooms.Where(r => r.Name == RoomController.Room.Name).FirstOrDefault()).Id 
-                                                     && t.Task.Timestamp > RoomController.tasksTimestamp).ToList();
+                                                     && t.Task.Timestamp > RoomController.TasksTimestamp).ToList();
 
             if (tasks.Any())
             {
-                RoomController.tasksTimestamp = tasks.OrderBy(t => t.Id).Last().Task.Timestamp;
+                RoomController.TasksTimestamp = tasks.OrderBy(t => t.Id).Last().Task.Timestamp;
                 string rString = "";
 
                 foreach(var task in tasks)
                 {
                     rString += @"<div class=""row m-0 mt-2 rounded bg-secondary text-white align-items-center justify-content-center"">";
                     rString += $"<div class=\"row\"><h4><a asp-action=\"GetRoom\" class=\"link-light\">{task.Task.Name}</a></h4></div>";
-                    rString += $"<div class=\"row\"><h5>Due date: {task.Task.DueDate.ToString("dd.MM.yyyy")}</h5></div>";
+                    rString += $"<div class=\"row\"><h5>Due date: {task.Task.DueDate:dd.MM.yyyy}</h5></div>";
                     rString += "</div>";
                 }
 

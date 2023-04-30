@@ -1,0 +1,34 @@
+﻿@model Commentus_web.Models.TaskModel
+
+@{
+    ViewData["Title"] = "Add task";
+
+    var context = new TestContext();
+
+    var users = context.Users;
+}
+
+<form class="w-100 justify-content-center d-flex flex-column h-100" asp-action="AddTask">
+    <input placeholder="Task description" asp-for="Name"/>
+    <div id="textArea" class="row w-100 d-flex flex-column justify-content-center align-items-center m-0" style="height: calc(100vh - 168px);">
+    </div>
+    <select size="@users.Count()" multiple="multiple" asp-for="Users">
+        @foreach(var user in users)
+        {
+            <option value="@user.Name">@user.Name</option>
+        }
+    </select>
+    <input type="date" asp-for="DueDate"/>
+    <input onkeyup="renderText()" id="taskText" placeholder="Task text" asp-for="Description"/>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+@section Scripts{
+    <script>
+        function renderText(){
+            var text = $("#taskText").val();
+
+            $("#textArea").html(text);
+        }
+    </script>
+}
