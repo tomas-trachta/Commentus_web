@@ -9,17 +9,16 @@ namespace Commentus_web.Controllers
 
     public class RegisterController : Controller
     {
-        private TestContext Context { get; }
-        public RegisterController()
+        private TestContext _context { get; }
+        public RegisterController(TestContext context)
         {
-            this.Context = new TestContext();
+            _context = context;
         }
 
         [Route("Home/Register")]
         public IActionResult Index()
         {
-            //null-coalescing operator doesnt work here for some reason 🤷‍
-            ViewBag.ErrorMessage = TempData["ErrorMessage"] != null ? TempData["ErrorMessage"].ToString() : null;
+            ViewBag.ErrorMessage = TempData["ErrorMessage"]?.ToString();
 
             return View();
         }
@@ -36,13 +35,13 @@ namespace Commentus_web.Controllers
             newUser.Password = hashedPassword.Item1;
             newUser.Salt = hashedPassword.Item2;
 
-            if (this.Context.Users.Any(x => x.Name == user.Name)) {
+            if (this._context.Users.Any(x => x.Name == user.Name)) {
                     TempData["ErrorMessage"] = "User with this name already exists in database!";
                     return RedirectToAction("Index");
-                }
+            }
 
-                this.Context.Users.Add(newUser);
-                this.Context.SaveChanges();
+                this._context.Users.Add(newUser);
+                this._context.SaveChanges();
 
                 HttpContext.Session.SetInt32("IsLoggedIn", 1);
                 HttpContext.Session.SetString("Name", user.Name);

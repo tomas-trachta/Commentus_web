@@ -1,3 +1,6 @@
+using Commentus_web.Models;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -6,6 +9,9 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDistributedMemoryCache();
 
 builder.Services.AddSession();
+
+builder.Services.AddDbContext<TestContext>(
+    options => options.UseMySQL("server=localhost;uid=root;pwd=;database=test;Convert Zero Datetime=True"));
 
 var app = builder.Build();
 

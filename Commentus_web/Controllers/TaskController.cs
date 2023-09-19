@@ -1,46 +1,51 @@
-﻿using Commentus_web.Models;
+﻿using Commentus_web.Attributes;
+using Commentus_web.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Commentus_web.Controllers
 {
     public class TaskController : Controller
     {
+        private TestContext _context { get; }
+
+        public TaskController(TestContext context)
+        {
+            _context = context;
+        }
+
+        [SessionFilter]
         [Route("Home/Task/{Name}")]
         public IActionResult Index(Models.TaskModel taskModel)
         {
-            var Context = new TestContext();
-
-            taskModel.Description = Context.Tasks.Where(t => t.Name == taskModel.Name).FirstOrDefault().Description;
+            taskModel.Description = _context.Tasks.Where(t => t.Name == taskModel.Name).First().Description;
 
             return View(taskModel);
         }
 
+        [SessionFilter]
         [Route("Home/Task/NewTask")]
         public IActionResult NewTask() 
         {
-            var model = new Commentus_web.Models.TaskModel();
-
-            return View(model);
+            return View(new TaskModel());
         }
 
+        [SessionFilter]
         [Route("Home/Task/AddTask")]
         public IActionResult AddTask(TaskModel taskModel) 
         {
-            var context = new TestContext();
-
             var task = new Models.Task();
             task.Name = taskModel.Name;
             task.DueDate = taskModel.DueDate;
             task.Description = taskModel.Description;
-            task.RoomsId = RoomController.Room.Id;
+            task.RoomsId = RoomController.Room!.Id;
             
-            foreach(var solver in taskModel.Users)
+            foreach(var solver in taskModel.Users!)
             {
-                task.TasksSolvers.Add(new TasksSolver { Task = task, TaskId = task.Id, User = context.Users.Where(u => u.Name == solver).First()});
+                task.TasksSolvers.Add(new TasksSolver { Task = task, TaskId = task.Id, User = _context.Users.Where(u => u.Name == solver).First()});
             }
 
-            context.Tasks.Add(task);
-            context.SaveChanges();
+            _context.Tasks.Add(task);
+            _context.SaveChanges();
 
             return RedirectToAction("Index", "Room");
         }

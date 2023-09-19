@@ -1,7 +1,8 @@
-﻿using Commentus_web.Models;
+﻿using Commentus_web.Attributes;
+using Commentus_web.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Dynamic;
 using System.Text;
 
 namespace Commentus_web.Controllers
@@ -13,26 +14,32 @@ namespace Commentus_web.Controllers
         public static Room? Room { get; set; }
         public static User? User { get; set; }
 
+        private TestContext _context { get; }
+
+        public RoomController(TestContext context)
+        {
+            _context = context;
+        }
+
         [Route("Home/Room")]
         public IActionResult Index()
         {
             return View();
         }
 
+        [SessionFilter]
         [HttpGet("Home/Room/GetRoom/{RoomsName}")]
         public IActionResult GetRoom(string RoomsName)
         {
-            var Context = new TestContext();
-
             var model = new RoomModel();
-            model.Room = Context.Rooms.Where(r => r.Name == RoomsName).FirstOrDefault();
-            model.Members = Context.RoomsMembers.Include(m => m.Room).Where(m => m.Room.Name == RoomsName).Include(m => m.User);
-            model.Messages = Context.RoomsMessages.Include(m => m.User).Include(m => m.Room).Where(m => m.Room.Name == RoomsName);
+            model.Room = _context.Rooms.Where(r => r.Name == RoomsName).FirstOrDefault();
+            model.Members = _context.RoomsMembers.Include(m => m.Room).Where(m => m.Room.Name == RoomsName).Include(m => m.User);
+            model.Messages = _context.RoomsMessages.Include(m => m.User).Include(m => m.Room).Where(m => m.Room.Name == RoomsName);
 
             if (HttpContext.Session.GetInt32("IsAdmin") == 1)
             {
-                var tasksolvers = Context.TasksSolvers.Include(t => t.Task).Where(t => t.Task.RoomsId ==
-                                                         (Context.Rooms.Where(r => r.Name == RoomsName).FirstOrDefault()).Id)
+                var tasksolvers = _context.TasksSolvers.Include(t => t.Task).Where(t => t.Task.RoomsId ==
+                                                         _context.Rooms.Where(r => r.Name == RoomsName).First().Id)
                                                     .OrderBy(t => t.TaskId);
 
                 List<TasksSolver> taskslist = new List<TasksSolver>();
@@ -56,10 +63,10 @@ namespace Commentus_web.Controllers
             }
             else
             {
-                model.Tasks = Context.TasksSolvers.Include(t => t.User).Include(t => t.Task)
+                model.Tasks = _context.TasksSolvers.Include(t => t.User).Include(t => t.Task)
                                                    .Where(t => t.User.Name == HttpContext.Session.GetString("Name"))
                                                    .Where(t => t.Task.RoomsId ==
-                                                         (Context.Rooms.Where(r => r.Name == RoomsName).FirstOrDefault()).Id);
+                                                         (_context.Rooms.Where(r => r.Name == RoomsName).First()).Id);
             }
 
             if(model.Messages.Any())
@@ -69,28 +76,33 @@ namespace Commentus_web.Controllers
                 RoomController.TasksTimestamp = model.Tasks.Include(t => t.Task).OrderBy(t => t.Task.Timestamp).Last().Task.Timestamp;
 
             if (model.Members.Any())
-                RoomController.User = Context.Users.Where(m => m.Name == HttpContext.Session.GetString("Name")).FirstOrDefault();
+                RoomController.User = _context.Users.Where(m => m.Name == HttpContext.Session.GetString("Name")).FirstOrDefault();
 
             RoomController.Room = model.Room;
 
             return View(model);
         }
 
+        [SessionFilter]
         [HttpGet("Home/Room/SendMessage")]
         public void SendMessage(string message)
         {
-            using (var Context = new TestContext()) {
-                Context.Database.ExecuteSqlInterpolated($"INSERT INTO rooms_messages (User_id, Room_id, Message) VALUES ({RoomController.User.Id},{RoomController.Room.Id},{Encoding.UTF8.GetBytes(message)});");
-            }
+            _context.RoomsMessages.Add(new RoomsMessage()
+            {
+                Message = Encoding.UTF8.GetBytes(message),
+                Room = Room!,
+                User = User!
+            });
+
+            _context.SaveChanges();
         }
 
+        [SessionFilter]
         [HttpGet("Home/Room/GetNewMessages")]
         public string GetNewMessages()
         {
-            var Context = new TestContext();
-
             var messages = new List<RoomsMessage>();
-            messages = Context.RoomsMessages.Include(m => m.User).Include(m => m.Room)
+            messages = _context.RoomsMessages.Include(m => m.User).Include(m => m.Room)
                                                 .Where(m => m.Room.Name == RoomController.Room.Name 
                                                 && m.Timestamp > RoomController.MessageTimestamp).ToList();
 
@@ -124,16 +136,15 @@ namespace Commentus_web.Controllers
             return null;
         }
 
+        [SessionFilter]
         [HttpGet("Home/Room/GetNewTasks")]
         public string GetNewTasks()
         {
-            var Context = new TestContext();
-
             var tasks = new List<TasksSolver>();
-            tasks = Context.TasksSolvers.Include(t => t.User).Include(t => t.Task)
+            tasks = _context.TasksSolvers.Include(t => t.User).Include(t => t.Task)
                                                .Where(t => t.User.Name == HttpContext.Session.GetString("Name"))
                                                .Where(t => t.Task.RoomsId ==
-                                                     (Context.Rooms.Where(r => r.Name == RoomController.Room.Name).FirstOrDefault()).Id 
+                                                     (_context.Rooms.Where(r => r.Name == RoomController.Room.Name).FirstOrDefault()).Id 
                                                      && t.Task.Timestamp > RoomController.TasksTimestamp).ToList();
 
             if (tasks.Any())
@@ -155,16 +166,21 @@ namespace Commentus_web.Controllers
             return null;
         }
 
+        [SessionFilter]
         [HttpGet("Home/Room/AddMember")]
         public void AddMember(string username)
         {
-            using (var Context = new TestContext())
+            var user = _context.Users.Where(u => u.Name == username).FirstOrDefault();
+
+            if (user != null)
             {
-                if (Context.Users.Where(u => u.Name == username).Any())
+                _context.RoomsMembers.Add(new RoomsMember()
                 {
-                    var userid = Context.Users.Where(u => u.Name == username).FirstOrDefault().Id;
-                    Context.Database.ExecuteSqlInterpolated($"INSERT INTO rooms_members (User_id, Room_id) VALUES ({userid},{RoomController.Room.Id});");
-                }
+                    User = user,
+                    Room = Room!
+                });
+
+                _context.SaveChanges();
             }
         }
     }

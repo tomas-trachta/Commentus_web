@@ -1,32 +1,32 @@
 ﻿using Commentus_web.Cryptography;
 using Commentus_web.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Text;
 
 namespace Commentus_web.Controllers
 {
     public class LoginController : Controller
     {
-        private TestContext Context { get; }
-        public LoginController()
+        private TestContext _context { get; }
+        public LoginController(TestContext context)
         {
-            this.Context = new TestContext();
+            _context = context;
         }
 
         [Route("Home/Login")]
         public IActionResult Index()
         {
-            //null-coalescing operator doesnt work here for some reason 🤷‍
-            ViewBag.ErrorMessage = TempData["ErrorMessage"] != null ? TempData["ErrorMessage"].ToString() : null;
+            ViewBag.ErrorMessage = TempData["ErrorMessage"]?.ToString();
 
             return View();
         }
 
         [ValidateAntiForgeryToken]
         [Route("Home/Login/Action")]
-        public IActionResult Login(UserModel user)
+        public async Task<IActionResult> Login(UserModel user)
         {
-                var dbEntity = this.Context.Users.Any(x => x.Name == user.Name) ? this.Context.Users.Where(x => x.Name == user.Name).First() : null;
+            var dbEntity = await this._context.Users.Where(x => x.Name == user.Name).FirstOrDefaultAsync();
                 if(dbEntity != null)
                 {
                     var hash = PasswordManager.ComputeHash(user.Password, dbEntity.Salt);
