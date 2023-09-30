@@ -61,7 +61,7 @@ namespace Commentus_web.Networking
 
             if (message.AddEndpoint())
             {
-                var existingClient = _clients.Where(x => x.Key == message).FirstOrDefault();
+                var existingClient = _clients.Where(client => client.HasOpenedConnection(message)).FirstOrDefault();
 
                 if (!existingClient.Equals(default(KeyValuePair<string, Socket>)))
                     existingClient = new(message, socket);
@@ -77,6 +77,8 @@ namespace Commentus_web.Networking
                         socket.BeginSendTo(_buffer, 0, _buffer.Length, SocketFlags.None, client.Value.LocalEndPoint, new AsyncCallback(SendCallback), socket);
                 }
             }
+
+            socket.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), socket);
         }
 
         private static void SendCallback(IAsyncResult result)

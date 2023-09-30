@@ -21,5 +21,10 @@ namespace Commentus_web.Networking
         {
             return client.Key.Split(':')[1] == message;
         }
+
+        public static bool HasOpenedConnection(this KeyValuePair<string, Socket> client, string message)
+        {
+            return client.Key.Contains(message.Split(':')[0]);
+        }
     }
 }
