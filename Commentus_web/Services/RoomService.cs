@@ -46,7 +46,7 @@ namespace Commentus_web.Services
                                                          _context.Rooms.Where(r => r.Name == RoomsName).First().Id)
                                                     .OrderBy(t => t.TaskId);
 
-                List<TasksSolver> taskslist = new List<TasksSolver>();
+                List<TasksSolver> taskslist = new();
 
                 if (tasksolvers.Any())
                 {
@@ -154,9 +154,7 @@ namespace Commentus_web.Services
         {
             var tasks = _context.TasksSolvers.Include(t => t.User).Include(t => t.Task)
                                                .Where(t => t.User.Name == httpContext.Session.GetString("Name"))
-                                               .Where(t => t.Task.RoomsId ==
-                                                     (_context.Rooms.Where(r => r.Name == Room.Name).FirstOrDefault()).Id
-                                                     && t.Task.Timestamp > TasksTimestamp).ToList();
+                                               .Where(t => t.Task.RoomsId == Room.Id && t.Task.Timestamp > TasksTimestamp).ToList();
 
             if (tasks.Any())
             {

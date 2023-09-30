@@ -48,7 +48,11 @@ app.UseEndpoints(endpoints =>
     endpoints.MapControllers();
 });
 
-Server roomServer = new Server();
-roomServer.Start();
+// run server on separate thread
+new Thread(() =>
+{
+    Server roomServer = new();
+    roomServer.Start();
+}).Start();
 
 app.Run();
