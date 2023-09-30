@@ -18,6 +18,7 @@ namespace Commentus_web.Services
 
         private TestContext _context { get; }
         private RoomModel _roomModel { get; set; }
+        private IPEndPoint _serverIpEndpoint { get; set; }
 
         private static Socket _client { get; set; }
 
@@ -27,8 +28,10 @@ namespace Commentus_web.Services
 
             _roomModel = new RoomModel();
 
-            _client = new(CommunicationProtocol.ServerIpEdpoint.AddressFamily, CommunicationProtocol.SOCKET_TYPE, CommunicationProtocol.PROTOCOL_TYPE);
-            _client.Connect(CommunicationProtocol.ServerIpEdpoint);
+            _serverIpEndpoint = CommunicationProtocol.GetServerIpEdpoint();
+
+            _client = new(_serverIpEndpoint.AddressFamily, CommunicationProtocol.SOCKET_TYPE, CommunicationProtocol.PROTOCOL_TYPE);
+            _client.Connect(_serverIpEndpoint);
         }
 
         public RoomModel GetRoom(string RoomsName, HttpContext httpContext)

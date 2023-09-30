@@ -10,7 +10,7 @@ namespace Commentus_web.Networking
         public const ProtocolType PROTOCOL_TYPE = ProtocolType.Tcp;
         public const int BUFFER_SIZE = 64;
 
-        public static IPEndPoint ServerIpEdpoint = new(Dns.GetHostEntry(Dns.GetHostName()).AddressList[0], PORT);
+        public static IPEndPoint GetServerIpEdpoint() => new(Dns.GetHostEntry(Dns.GetHostName()).AddressList[0], PORT);
 
         public static bool AddEndpoint(this string message)
         {

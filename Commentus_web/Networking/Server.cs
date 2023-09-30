@@ -15,12 +15,16 @@ namespace Commentus_web.Networking
         private static Socket _listener { get; set; }
         private static byte[] _buffer { get; set; }
 
+        private IPEndPoint _serverIpEndpoint { get; set; }
+
         public Server()
         {
-            _listener = new(CommunicationProtocol.ServerIpEdpoint.AddressFamily, CommunicationProtocol.SOCKET_TYPE, CommunicationProtocol.PROTOCOL_TYPE);
+            _serverIpEndpoint = CommunicationProtocol.GetServerIpEdpoint();
+
+            _listener = new(_serverIpEndpoint.AddressFamily, CommunicationProtocol.SOCKET_TYPE, CommunicationProtocol.PROTOCOL_TYPE);
             _clients = new();
 
-            _listener.Bind(CommunicationProtocol.ServerIpEdpoint);
+            _listener.Bind(_serverIpEndpoint);
             _listener.Listen();
 
             _buffer = new byte[CommunicationProtocol.BUFFER_SIZE];
