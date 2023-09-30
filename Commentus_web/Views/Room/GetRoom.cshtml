@@ -19,15 +19,17 @@
                     @if (img != "")
                     {
                         <div class="col-auto m-0 p-0 me-3 ms-1">
-                            <img src="@imgUrl" style="width:50px;"/>
+                            <img src="@imgUrl" style="width:25px;"/>
                         </div>
-                        <div class="col-9 p-0">
-                            <h4>@member.User.Name</h4>
+                            <div class="col-9 p-2">
+                                <a class="text-decoration-none text-white" asp-action="GetProfileById" asp-controller="Profile" asp-route-id="@member.User.Id">@member.User.Name</a>
                         </div>
                     }
                     else
                     {
-                        <h4>@member.User.Name</h4>
+                        <div class="col-9 p-2">
+                                <a class="text-decoration-none text-white" asp-action="GetProfileById" asp-controller="Profile" asp-route-id="@member.User.Id">@member.User.Name</a>
+                        </div>
                     }
                 </div>
             }
@@ -45,11 +47,15 @@
                     string img = imgBytes != null ? Convert.ToBase64String(imgBytes) : "";
                     string imgUrl = string.Format("data:image/png;base64,{0}", img);
 
-                    <div class="row m-0 align-items-center justify-content-start mt-4">
+                    <div class="row mt-4">
+                        <div class="col-1"></div>
+                        <small class="col-auto text-muted">@message.User.Name</small>
+                        <small class="col-auto text-muted ps-2">@message.Timestamp</small>
+                    </div>
+                    <div class="row m-0 align-items-start justify-content-start mt-1">
                         <div class="col-auto m-0 p-0 me-4 ms-1">
-                            <div class="row bg-secondary p-2 rounded text-white align-items-center justify-content-center">
+                            <div class="row p-2 text-white align-items-center justify-content-center">
                                 <div class="col-auto"><img src="@imgUrl" style="width:25px;" /></div>
-                                <div class="col-auto">@message.User.Name</div>
                             </div>
                         </div>
                         @{
@@ -74,12 +80,12 @@
                                 if (System.Text.RegularExpressions.Regex.IsMatch(messageString, URIPattern))
                                 {
                                     <div class="col-auto p-0">
-                                        <img src="@messageString" />
+                                        <img class="w-100" src="@messageString" />
                                     </div>
                                 }
                                 else
                                 {
-                                    <div class="col-auto p-0">
+                                    <div class="col-9 d-flex h-100 align-items-center p-0 ps-2 rounded" style="background: #e8e8e8;">
                                         <span>
                                             @messageString
                                         </span>
@@ -109,12 +115,12 @@
             <div class="row overflow-auto w-100 align-items-center justify-content-center m-0 p-0" id="tasks">
             @foreach(var task in Model.Tasks)
             {
-                    <div class="row m-0 mt-2 rounded bg-secondary text-white align-items-center justify-content-center">
+                <div class="row m-0 mt-2 rounded bg-secondary text-white align-items-center justify-content-center">
                         @{
                             var name = new Dictionary<string, string> { { "Name", task.Task.Name } };
                         }
-                    <div class="row"><h4><a asp-action="Index" asp-controller="Task"  asp-all-route-data="name" class="link-light">@task.Task.Name</a></h4></div>
-                    <div class="row"><h5>Due date: @task.Task.DueDate.ToString("dd.MM.yyyy")</h5></div>
+                    <div class="row"><a asp-action="Index" asp-controller="Task"  asp-all-route-data="name" class="link-light">@task.Task.Name</a></div>
+                    <div class="row pb-2">Due date: @task.Task.DueDate.ToString("dd.MM.yyyy")</div>
                 </div>
             }
             </div>
@@ -130,6 +136,7 @@
 
         $(document).ready(function(){
             $("#messages").scrollTop($("#messages")[0].scrollHeight);
+            receiveNewMessages();
         });
 
         function sendMessage(){
@@ -166,8 +173,7 @@
             })
         }
 
-        //kinda dumb and inefficient solution, should use signalR hub instead, maybe will implement someday, but im too tired rn 😄
-        setInterval(function () {
+        function receiveNewMessages(){
             $.ajax({
                 url: '@Url.ActionLink("GetNewMessages")',
                 method: 'GET'
@@ -178,11 +184,14 @@
                         $("#messages").scrollTop($("#messages")[0].scrollHeight);
                     }
                     getTasks();
+                    alert("getting messages");
+                    receiveNewMessages();
                 })
                 .fail(function (data) {
                     alert("failed to get messages");
+                    receiveNewMessages();
                 });
-        }, 2000);
+        }
 
         function getTasks() {
             $.ajax({
@@ -198,6 +207,8 @@
                     alert("failed to get tasks")
                 });
         }
+
+        var sock = new WebSocket()
 
     </script>
 }

@@ -1,0 +1,14 @@
+﻿@model User
+
+@{
+    ViewData["Title"] = "Profile";
+}
+
+<h1>User name: @if (!string.IsNullOrEmpty(Model.Name))
+    {
+        @Model.Name
+    }
+</h1>
+<h1>Is Admin:
+        @Convert.ToBoolean(Model.IsAdmin).ToString()
+</h1>

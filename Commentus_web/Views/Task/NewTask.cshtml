@@ -8,9 +8,9 @@
     var users = context.Users;
 }
 
-<form class="w-100 justify-content-center d-flex flex-column h-100" asp-action="AddTask">
+<form class="w-100 d-flex flex-column h-100" asp-action="AddTask">
     <input placeholder="Task description" asp-for="Name"/>
-    <div id="textArea" class="row w-100 d-flex flex-column justify-content-center align-items-center m-0" style="height: calc(100vh - 168px);">
+    <div id="textArea" class="row w-100 d-flex flex-column m-0 p-2" style="height: calc(100vh - 504px);">
     </div>
     <select size="@users.Count()" multiple="multiple" asp-for="Users">
         @foreach(var user in users)
@@ -18,17 +18,17 @@
             <option value="@user.Name">@user.Name</option>
         }
     </select>
-    <input type="date" asp-for="DueDate"/>
-    <input onkeyup="renderText()" id="taskText" placeholder="Task text" asp-for="Description"/>
+    <input class="form-control" value="@DateOnly.FromDateTime(DateTime.Now)" type="date" asp-for="DueDate" class="p-1" />
+    <textarea id="rawCode" placeholder="Task text" style="height: 336px;"></textarea>
+    <input id="taskText" asp-for="Description" type="hidden"/>
     <button type="submit" class="btn btn-primary">Submit</button>
 </form>
 
 @section Scripts{
     <script>
-        function renderText(){
-            var text = $("#taskText").val();
-
-            $("#textArea").html(text);
-        }
+        $("#rawCode").keyup(function(){
+            $("#textArea").html($("#rawCode").val());
+            $("#taskText").val($("#rawCode").val());
+        });
     </script>
 }

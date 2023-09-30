@@ -1,5 +1,6 @@
 ﻿using Commentus_web.Attributes;
 using Commentus_web.Models;
+using Commentus_web.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Commentus_web.Controllers
@@ -37,7 +38,7 @@ namespace Commentus_web.Controllers
             task.Name = taskModel.Name;
             task.DueDate = taskModel.DueDate;
             task.Description = taskModel.Description;
-            task.RoomsId = RoomController.Room!.Id;
+            task.RoomsId = RoomService.Room!.Id;
             
             foreach(var solver in taskModel.Users!)
             {
