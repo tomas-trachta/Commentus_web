@@ -104,7 +104,9 @@ namespace Commentus_web.Services
 
             _context.SaveChanges();
 
-            _client.Send(Encoding.UTF8.GetBytes(Room.Name));
+            var roomNameBuffer = Encoding.UTF8.GetBytes(Room.Name);
+
+            _client.Send(roomNameBuffer);
         }
 
         public async Task<string?> GetNewMessages()

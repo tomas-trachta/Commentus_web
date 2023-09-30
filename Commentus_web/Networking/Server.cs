@@ -57,6 +57,8 @@ namespace Commentus_web.Networking
             byte[] dataBuffer = new byte[received];
             Array.Copy(_buffer, dataBuffer, received);
 
+            _buffer = new byte[CommunicationProtocol.BUFFER_SIZE];
+
             string message = Encoding.UTF8.GetString(dataBuffer);
 
             if (message.AddEndpoint())
@@ -74,7 +76,7 @@ namespace Commentus_web.Networking
                 foreach (var client in _clients)
                 {
                     if (client.IsMemberOfRoom(message))
-                        socket.BeginSendTo(_buffer, 0, _buffer.Length, SocketFlags.None, client.Value.LocalEndPoint, new AsyncCallback(SendCallback), socket);
+                        socket.BeginSendTo(dataBuffer, 0, dataBuffer.Length, SocketFlags.None, client.Value.LocalEndPoint, new AsyncCallback(SendCallback), socket);
                 }
             }
 
