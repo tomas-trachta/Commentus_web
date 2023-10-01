@@ -21,6 +21,7 @@
     <input class="form-control" value="@DateOnly.FromDateTime(DateTime.Now)" type="date" asp-for="DueDate" class="p-1" />
     <textarea id="rawCode" placeholder="Task text" style="height: 336px;"></textarea>
     <input id="taskText" asp-for="Description" type="hidden"/>
+    <input asp-for="RoomsId" type="hidden" value="@Model.RoomsId"/>
     <button type="submit" class="btn btn-primary">Submit</button>
 </form>
 

@@ -6,44 +6,53 @@ using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System;
 using Commentus_web.Networking;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 
 namespace Commentus_web.Services
 {
     public class RoomService : IRoomService
     {
-        public static DateTime MessageTimestamp { get; set; }
         public static DateTime TasksTimestamp { get; set; }
-        public static Room? Room { get; set; }
-        public static new User? User { get; set; }
 
-        private TestContext _context { get; }
-        private RoomModel _roomModel { get; set; }
         private IPEndPoint _serverIpEndpoint { get; set; }
 
-        private static Socket _client { get; set; }
+        private Socket _client { get; set; }
+
+        private Dictionary<string, Socket> _clients { get; }
+        private Dictionary<string, DateTime> _messageTimeStamps { get; set; }
 
         public RoomService()
         {
-            _context = new TestContext();
-
-            _roomModel = new RoomModel();
+            _messageTimeStamps = new();
 
             _serverIpEndpoint = CommunicationProtocol.GetServerIpEdpoint();
 
-            _client = new(_serverIpEndpoint.AddressFamily, CommunicationProtocol.SOCKET_TYPE, CommunicationProtocol.PROTOCOL_TYPE);
-            _client.Connect(_serverIpEndpoint);
+            _clients = new();
         }
 
-        public RoomModel GetRoom(string RoomsName, HttpContext httpContext)
+        public RoomModel GetRoom(string roomName, HttpContext httpContext, TestContext _context)
         {
-            _roomModel.Room = _context.Rooms.Where(r => r.Name == RoomsName).FirstOrDefault();
-            _roomModel.Members = _context.RoomsMembers.Include(m => m.Room).Where(m => m.Room.Name == RoomsName).Include(m => m.User);
-            _roomModel.Messages = _context.RoomsMessages.Include(m => m.User).Include(m => m.Room).Where(m => m.Room.Name == RoomsName);
+            Socket? client = default;
+            var userName = httpContext.Session.GetString("Name");
+            if (!userName.IsClient(_clients))
+            {
+                client = new Socket(_serverIpEndpoint.AddressFamily, CommunicationProtocol.SOCKET_TYPE, CommunicationProtocol.PROTOCOL_TYPE);
+                client.Connect(_serverIpEndpoint);
+
+                _clients.Add(userName, client);
+            }
+
+            var roomModel = new RoomModel();
+
+            roomModel.Room = _context.Rooms.Where(r => r.Name == roomName).FirstOrDefault();
+            roomModel.Members = _context.RoomsMembers.Include(m => m.Room).Where(m => m.Room.Name == roomName).Include(m => m.User);
+            roomModel.Messages = _context.RoomsMessages.Include(m => m.User).Include(m => m.Room).Where(m => m.Room.Name == roomName);
 
             if (httpContext.Session.GetInt32("IsAdmin") == 1)
             {
                 var tasksolvers = _context.TasksSolvers.Include(t => t.Task).Where(t => t.Task.RoomsId ==
-                                                         _context.Rooms.Where(r => r.Name == RoomsName).First().Id)
+                                                         _context.Rooms.Where(r => r.Name == roomName).First().Id)
                                                     .OrderBy(t => t.TaskId);
 
                 List<TasksSolver> taskslist = new();
@@ -64,67 +73,70 @@ namespace Commentus_web.Services
                         taskslist.Add(task);
                     }
                 }
-                _roomModel.Tasks = taskslist.AsQueryable();
+                roomModel.Tasks = taskslist.AsQueryable();
             }
             else
             {
-                _roomModel.Tasks = _context.TasksSolvers.Include(t => t.User).Include(t => t.Task)
+                roomModel.Tasks = _context.TasksSolvers.Include(t => t.User).Include(t => t.Task)
                                                    .Where(t => t.User.Name == httpContext.Session.GetString("Name"))
                                                    .Where(t => t.Task.RoomsId ==
-                                                         (_context.Rooms.Where(r => r.Name == RoomsName).First()).Id);
+                                                         (_context.Rooms.Where(r => r.Name == roomName).First()).Id);
             }
 
-            if (_roomModel.Messages.Any())
-                MessageTimestamp = _roomModel.Messages.OrderBy(t => t.Id).Last().Timestamp;
+            var message = $"{httpContext.Session.GetString("Name")}:{roomName}";
 
-            if (_roomModel.Tasks.Any())
-                TasksTimestamp = _roomModel.Tasks.Include(t => t.Task).OrderBy(t => t.Task.Timestamp).Last().Task.Timestamp;
+            if(client == default)
+                client = _clients.First(x => x.Key == userName).Value;
 
-            if (_roomModel.Members.Any())
-                User = _context.Users.Where(m => m.Name == httpContext.Session.GetString("Name")).FirstOrDefault();
+            var sent = client.Send(Encoding.UTF8.GetBytes(message));
 
-            Room = _roomModel.Room;
-
-            var message = $"{httpContext.Session.GetString("Name")}:{Room.Name}";
-            var sent = _client.Send(Encoding.UTF8.GetBytes(message));
-
-            return _roomModel;
+            return roomModel;
         }
 
-        public void SendMessage(string message)
+        public void SendMessage(string message, string roomName, HttpContext httpContext, TestContext _context)
         {
+            var userName = httpContext.Session.GetString("Name");
+
             var mess = new RoomsMessage()
             {
                 Message = Encoding.UTF8.GetBytes(message),
-                RoomId = Room.Id,
-                UserId = User.Id
+                RoomId = _context.Rooms.Where(x => x.Name == roomName).First().Id,
+                UserId = _context.Users.Where(x => x.Name == userName).First().Id
             };
 
             _context.RoomsMessages.Add(mess);
 
             _context.SaveChanges();
 
-            var roomNameBuffer = Encoding.UTF8.GetBytes(Room.Name);
+            var roomNameBuffer = Encoding.UTF8.GetBytes(roomName);
 
-            _client.Send(roomNameBuffer);
+            var client = _clients.First(x => x.Key == userName).Value;
+            client.Send(roomNameBuffer);
         }
 
-        public async Task<string?> GetNewMessages()
+        public async Task<string?> GetNewMessages(HttpContext httpContext, string roomName)
         {
-            var buffer = new byte[CommunicationProtocol.BUFFER_SIZE];
-            //long polling
-            var received = await _client.ReceiveAsync(buffer, SocketFlags.None);
-
-            if (Encoding.UTF8.GetString(buffer, 0, received) == Room.Name)
+            using (var _context = new TestContext())
             {
+                var userName = httpContext.Session.GetString("Name");
+
+                var buffer = new byte[CommunicationProtocol.BUFFER_SIZE];
+                var client = _clients.First(x => x.Key == userName).Value;
+                //long polling
+                var received = await client.ReceiveAsync(buffer, SocketFlags.None);
+
+                var timeStamp = !_messageTimeStamps.Where(x => x.Key == userName).FirstOrDefault().Value.Equals(default(DateTime)) ?
+                                _messageTimeStamps.First(x => x.Key == userName).Value :
+                                default(DateTime);
+
                 var messages = _context.RoomsMessages.Include(m => m.User).Include(m => m.Room)
-                                                    .Where(m => m.Room.Name == Room.Name
-                                                    && m.Timestamp > MessageTimestamp).ToList();
+                                                    .Where(m => m.Room.Name == roomName
+                                                    && m.Timestamp > timeStamp).ToList();
 
                 if (messages.Any())
                 {
-                    MessageTimestamp = messages.Last().Timestamp;
-                    string rString = "";
+                    _messageTimeStamps[userName] = messages.Last().Timestamp;
+                    StringBuilder rString = new();
 
                     foreach (var message in messages)
                     {
@@ -132,61 +144,69 @@ namespace Commentus_web.Services
                         string img = imgBytes != null ? Convert.ToBase64String(imgBytes) : "";
                         string imgUrl = string.Format("data:image/png;base64,{0}", img);
 
-                        rString += @"<div class=""row m-0 align-items-center justify-content-start mt-4"">";
-                        rString += @"<div class=""col-auto m-0 p-0 me-4 ms-1"">";
-                        rString += @"<div class=""row bg-secondary p-2 rounded text-white align-items-center justify-content-center"">";
-                        rString += $"<div class=\"col-auto\"><img src=\"{imgUrl}\" style=\"width:25px;\" /></div>";
-                        rString += $"<div class=\"col-auto\">{message.User.Name}</div>";
-                        rString += "</div></div>";
-                        rString += @"<div class=""col-auto p-0"">";
-                        rString += "<span>";
+                        rString.Append(@"<div class=""row mt-4"">");
+                        rString.Append(@"<div class=""col-1""></div>");
+                        rString.Append($"<small class=\"col-auto text-muted\">{message.User.Name}</small>");
+                        rString.Append($"<small class=\"col-auto text-muted ps-2\">{message.Timestamp}</small>");
+                        rString.Append("</div>");
+                        rString.Append(@"<div class=""row m-0 align-items-start justify-content-start mt-1"">");
+                        rString.Append(@"<div class=""col-auto m-0 p-0 me-4 ms-1"">");
+                        rString.Append(@"<div class=""row p-2 text-white align-items-center justify-content-center"">");
+                        rString.Append($"<div class=\"col-auto\"><img src=\"{imgUrl}\" style=\"width:25px;\" /></div>");
+                        rString.Append("</div></div>");
+                        rString.Append(@"<div class=""col-9 d-flex h-100 align-items-center p-0 ps-2 rounded"" style=""background: #e8e8e8;"">");
+                        rString.Append("<span>");
                         byte[] messageBytes = message.Message;
                         string messageString = Encoding.UTF8.GetString(messageBytes);
-                        rString += messageString;
-                        rString += "</span></div></div>";
+                        rString.Append(messageString);
+                        rString.Append("</span></div></div>");
                     }
 
-                    return rString;
+                    return rString.ToString();
                 }
+                return null;
             }
-            return null;
         }
 
-        public string? GetNewTasks(HttpContext httpContext)
+        public string? GetNewTasks(HttpContext httpContext, string roomName, TestContext _context)
         {
+            var userName = httpContext.Session.GetString("Name");
+
+            var room = _context.Rooms.First(room => room.Name == roomName);
             var tasks = _context.TasksSolvers.Include(t => t.User).Include(t => t.Task)
-                                               .Where(t => t.User.Name == httpContext.Session.GetString("Name"))
-                                               .Where(t => t.Task.RoomsId == Room.Id && t.Task.Timestamp > TasksTimestamp).ToList();
+                                               .Where(t => t.User.Name == userName)
+                                               .Where(t => t.Task.RoomsId == room.Id && t.Task.Timestamp > TasksTimestamp).ToList();
 
             if (tasks.Any())
             {
                 TasksTimestamp = tasks.OrderBy(t => t.Id).Last().Task.Timestamp;
-                string rString = "";
+                StringBuilder rString = new();
 
                 foreach (var task in tasks)
                 {
-                    rString += @"<div class=""row m-0 mt-2 rounded bg-secondary text-white align-items-center justify-content-center"">";
-                    rString += $"<div class=\"row\"><h4><a asp-action=\"GetRoom\" class=\"link-light\">{task.Task.Name}</a></h4></div>";
-                    rString += $"<div class=\"row\"><h5>Due date: {task.Task.DueDate:dd.MM.yyyy}</h5></div>";
-                    rString += "</div>";
+                    rString.Append(@"<div class=""row m-0 mt-2 rounded bg-secondary text-white align-items-center justify-content-center"">");
+                    rString.Append($"<div class=\"row\"><h4><a asp-action=\"GetRoom\" class=\"link-light\">{task.Task.Name}</a></h4></div>");
+                    rString.Append($"<div class=\"row\"><h5>Due date: {task.Task.DueDate:dd.MM.yyyy}</h5></div>");
+                    rString.Append("</div>");
                 }
 
-                return rString;
+                return rString.ToString();
             }
 
             return null;
         }
 
-        public void AddNember(string username)
+        public void AddNember(string username, string roomName, TestContext _context)
         {
             var user = _context.Users.Where(u => u.Name == username).FirstOrDefault();
+            var room = _context.Rooms.First(room => room.Name == roomName);
 
             if (user != null)
             {
                 _context.RoomsMembers.Add(new RoomsMember()
                 {
                     User = user,
-                    Room = Room!
+                    Room = room
                 });
 
                 _context.SaveChanges();

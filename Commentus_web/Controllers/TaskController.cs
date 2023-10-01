@@ -24,10 +24,11 @@ namespace Commentus_web.Controllers
         }
 
         [SessionFilter]
-        [Route("Home/Task/NewTask")]
-        public IActionResult NewTask() 
+        [Route("Home/Task/NewTask/{roomId}")]
+        public IActionResult NewTask(int roomId) 
         {
-            return View(new TaskModel());
+            var taskModel = new TaskModel() { RoomsId = roomId };
+            return View(taskModel);
         }
 
         [SessionFilter]
@@ -38,7 +39,7 @@ namespace Commentus_web.Controllers
             task.Name = taskModel.Name;
             task.DueDate = taskModel.DueDate;
             task.Description = taskModel.Description;
-            task.RoomsId = RoomService.Room!.Id;
+            task.RoomsId = taskModel.RoomsId;
             
             foreach(var solver in taskModel.Users!)
             {

@@ -14,6 +14,8 @@ namespace Commentus_web.Networking
 
         public static IPEndPoint GetServerIpEdpoint() => new(Dns.GetHostEntry(Dns.GetHostName()).AddressList[0], PORT);
 
+
+        #region Extensions
         public static bool AddEndpoint(this string message)
         {
             return message.Contains(':');
@@ -28,5 +30,11 @@ namespace Commentus_web.Networking
         {
             return client.Key.Contains(message.Split(':')[0]);
         }
+
+        public static bool IsClient(this string name, Dictionary<string, Socket> clients)
+        {
+            return clients.ContainsKey(name);
+        }
+        #endregion
     }
 }

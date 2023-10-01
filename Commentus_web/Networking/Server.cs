@@ -5,6 +5,8 @@ using System.Text;
 using Commentus_web.Models;
 using Task = System.Threading.Tasks.Task;
 using MySqlX.XDevAPI;
+using System.Runtime.CompilerServices;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace Commentus_web.Networking
 {
@@ -17,6 +19,8 @@ namespace Commentus_web.Networking
 
         private IPEndPoint _serverIpEndpoint { get; set; }
 
+        private Task _deleteClosedConnections { get; set; }
+
         public Server()
         {
             _serverIpEndpoint = CommunicationProtocol.GetServerIpEdpoint();
@@ -28,6 +32,8 @@ namespace Commentus_web.Networking
             _listener.Listen();
 
             _buffer = new byte[CommunicationProtocol.BUFFER_SIZE];
+
+            StartReccuringTask();
         }
 
         public void Start()
@@ -66,9 +72,9 @@ namespace Commentus_web.Networking
                 var existingClient = _clients.Where(client => client.HasOpenedConnection(message)).FirstOrDefault();
 
                 if (!existingClient.Equals(default(KeyValuePair<string, Socket>)))
-                    existingClient = new(message, socket);
-                else
-                    _clients.Add(message, socket);
+                    _clients.Remove(existingClient.Key);
+
+                _clients.Add(message, socket);
             }
 
             else
@@ -87,6 +93,32 @@ namespace Commentus_web.Networking
         {
             Socket socket = (Socket)result.AsyncState!;
             socket.EndSend(result);
+        }
+
+        private void SetReccuringTask()
+        {
+            _deleteClosedConnections = new Task(() => {
+                foreach (var client in _clients)
+                {
+                    if (!client.Value.Connected)
+                        _clients.Remove(client.Key);
+                }
+            });
+        }
+
+        private void StartReccuringTask()
+        {
+            new Thread(() =>
+            {
+                while(true)
+                {
+                    SetReccuringTask();
+                    var task = _deleteClosedConnections;
+                    task.Start();
+                    task.Wait();
+                    Thread.Sleep(1000);
+                }
+            }).Start();
         }
     }
 }
