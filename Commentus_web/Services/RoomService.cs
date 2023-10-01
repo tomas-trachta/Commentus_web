@@ -8,19 +8,17 @@ using System;
 using Commentus_web.Networking;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using Commentus_web.Extensions;
 
 namespace Commentus_web.Services
 {
     public class RoomService : IRoomService
     {
-        public static DateTime TasksTimestamp { get; set; }
-
         private IPEndPoint _serverIpEndpoint { get; set; }
 
-        private Socket _client { get; set; }
-
         private Dictionary<string, Socket> _clients { get; }
-        private Dictionary<string, DateTime> _messageTimeStamps { get; set; }
+        private Dictionary<string, DateTime?> _messageTimeStamps { get; set; }
+        private Dictionary<string, DateTime?> _taskTimeStamps { get; set; }
 
         public RoomService()
         {
@@ -125,9 +123,7 @@ namespace Commentus_web.Services
                 //long polling
                 var received = await client.ReceiveAsync(buffer, SocketFlags.None);
 
-                var timeStamp = !_messageTimeStamps.Where(x => x.Key == userName).FirstOrDefault().Value.Equals(default(DateTime)) ?
-                                _messageTimeStamps.First(x => x.Key == userName).Value :
-                                default(DateTime);
+                var timeStamp = _messageTimeStamps.GetTimeStamp(userName) ?? DateTime.MinValue;
 
                 var messages = _context.RoomsMessages.Include(m => m.User).Include(m => m.Room)
                                                     .Where(m => m.Room.Name == roomName
@@ -135,7 +131,11 @@ namespace Commentus_web.Services
 
                 if (messages.Any())
                 {
-                    _messageTimeStamps[userName] = messages.Last().Timestamp;
+                    if(_messageTimeStamps.ContainsKey(userName))
+                        _messageTimeStamps[userName] = messages.LastOrDefault()?.Timestamp;
+                    else
+                        _messageTimeStamps.Add(userName, messages.LastOrDefault()?.Timestamp);
+
                     StringBuilder rString = new();
 
                     foreach (var message in messages)
@@ -172,14 +172,18 @@ namespace Commentus_web.Services
         {
             var userName = httpContext.Session.GetString("Name");
 
+            var timeStamp = _taskTimeStamps.GetTimeStamp(userName) ?? DateTime.MinValue;
+
             var room = _context.Rooms.First(room => room.Name == roomName);
-            var tasks = _context.TasksSolvers.Include(t => t.User).Include(t => t.Task)
-                                               .Where(t => t.User.Name == userName)
-                                               .Where(t => t.Task.RoomsId == room.Id && t.Task.Timestamp > TasksTimestamp).ToList();
+            var tasks = _context.TasksSolvers.GetTaskSolvers(userName, room, timeStamp);
 
             if (tasks.Any())
             {
-                TasksTimestamp = tasks.OrderBy(t => t.Id).Last().Task.Timestamp;
+                if (_taskTimeStamps.ContainsKey(userName))
+                    _taskTimeStamps[userName] = tasks.LastOrDefault()?.Task.Timestamp;
+                else
+                    _taskTimeStamps.Add(userName, tasks.LastOrDefault()?.Task.Timestamp);
+
                 StringBuilder rString = new();
 
                 foreach (var task in tasks)

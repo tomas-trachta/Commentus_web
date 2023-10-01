@@ -142,7 +142,7 @@
         function sendMessage(){
             var formData = {
                 message: $("#message").val(),
-                roomName: @Model.Room.Name
+                roomName: '@Model.Room.Name'
             }
 
             $.ajax({
@@ -160,7 +160,7 @@
         function addMember(){
             var formData = {
                 username: $("#username").val(),
-                roomName: @Model.Room.Name
+                roomName: '@Model.Room.Name'
             }
 
             $.ajax({
@@ -179,7 +179,7 @@
             $.ajax({
                 url: '@Url.ActionLink("GetNewMessages")',
                 method: 'GET',
-                data: { roomName: @Model.Room.Name },
+                data: { roomName: '@Model.Room.Name' },
                 success: function (data) {
                     if (data != null) {
                         $('#messages').append(data);
@@ -194,7 +194,7 @@
             $.ajax({
                 url: '@Url.ActionLink("GetNewTasks")',
                 method: 'GET',
-                data: { roomName: @Model.Room.Name }
+                data: { roomName: '@Model.Room.Name' }
             })
                 .done(function (data) {
                     if (data != null) {
