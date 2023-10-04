@@ -1,5 +1,6 @@
 using Commentus_web.Models;
 using Commentus_web.Networking;
+using Commentus_web.Networking.Interfaces;
 using Commentus_web.Services;
 using Commentus_web.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +23,8 @@ builder.Services.AddSession();
 builder.Services.AddDbContext<TestContext>(
     options => options.UseMySQL("server=localhost;uid=root;pwd=;database=test;Convert Zero Datetime=True"));
 
-builder.Services.AddSingleton<IRoomService, RoomService>();
+builder.Services.AddScoped<IRoomService, RoomService>();
+builder.Services.AddSingleton<IClientsContainer, ClientsContainer>();
 
 var app = builder.Build();
 

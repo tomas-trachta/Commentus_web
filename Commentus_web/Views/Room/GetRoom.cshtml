@@ -188,6 +188,9 @@
                     receiveNewMessages();
                 }
             })
+            .fail(function(data){
+                alert(data);
+            })
         }
 
         function getTasks() {
@@ -205,8 +208,6 @@
                     alert("failed to get tasks")
                 });
         }
-
-        var sock = new WebSocket()
 
     </script>
 }

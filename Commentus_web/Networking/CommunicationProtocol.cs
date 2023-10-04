@@ -31,9 +31,9 @@ namespace Commentus_web.Networking
             return client.Key.Contains(message.Split(':')[0]);
         }
 
-        public static bool IsClient(this string name, Dictionary<string, Socket> clients)
+        public static bool IsClient(this string name, List<Client> clients)
         {
-            return clients.ContainsKey(name);
+            return clients.Where(x => x.Name == name).Any();
         }
         #endregion
     }

@@ -28,6 +28,7 @@ namespace Commentus_web.Controllers
         }
 
         [Route("Home/Room")]
+        [Route("Room")]
         public IActionResult Index()
         {
             return View();
@@ -35,6 +36,7 @@ namespace Commentus_web.Controllers
 
         [SessionFilter]
         [HttpGet("Home/Room/{RoomsName}")]
+        [HttpGet("Room/{RoomsName}")]
         public IActionResult GetRoom(string RoomsName)
         {
             var model = _roomService.GetRoom(RoomsName, HttpContext, _context);
@@ -44,6 +46,7 @@ namespace Commentus_web.Controllers
 
         [SessionFilter]
         [HttpGet("Home/Room/SendMessage")]
+        [HttpGet("Room/SendMessage")]
         public void SendMessage(string message, string roomName)
         { 
             _roomService.SendMessage(message, roomName, HttpContext, _context);
@@ -51,13 +54,22 @@ namespace Commentus_web.Controllers
 
         [SessionFilter]
         [HttpGet("Home/Room/GetNewMessages")]
+        [HttpGet("Room/GetNewMessages")]
         public async Task<string?> GetNewMessages(string roomName)
         {
-            return await _roomService.GetNewMessages(HttpContext, roomName);
+            try
+            {
+                return await _roomService.GetNewMessages(HttpContext, roomName, _context);
+            }
+            catch (Exception ex)
+            {
+                return $"{ex.Message}\n{ex.InnerException}";
+            }
         }
 
         [SessionFilter]
         [HttpGet("Home/Room/GetNewTasks")]
+        [HttpGet("Room/GetNewTasks")]
         public string? GetNewTasks(string roomName)
         {
             return _roomService.GetNewTasks(HttpContext, roomName, _context);
@@ -66,6 +78,7 @@ namespace Commentus_web.Controllers
         [AdminOnly]
         [SessionFilter]
         [HttpGet("Home/Room/AddMember")]
+        [HttpGet("Room/AddMember")]
         public void AddMember(string username, string roomName)
         {
             _roomService.AddNember(username, roomName, _context);
