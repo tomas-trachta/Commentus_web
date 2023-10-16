@@ -16,6 +16,8 @@ namespace Commentus_web.Networking
         public ClientsContainer()
         {
             _clients = new();
+
+            StartReccuringTask();
         }
 
         public void AddClient(HttpContext httpContext)
@@ -56,6 +58,20 @@ namespace Commentus_web.Networking
             if(client is not null)
                 return await client.Socket.ReceiveAsync(buffer, SocketFlags.None);
             return 0;
+        }
+
+        private void StartReccuringTask()
+        {
+            new Thread(() =>
+            {
+                foreach(var client in _clients)
+                {
+                    if (!client.Socket.Connected)
+                        _clients.Remove(client);
+                }
+
+                Thread.Sleep(1000);
+            }).Start();
         }
     }
 }

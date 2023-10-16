@@ -83,5 +83,13 @@ namespace Commentus_web.Controllers
         {
             _roomService.AddNember(username, roomName, _context);
         }
+
+        [SessionFilter]
+        [HttpGet("Home/Room/Paginator/GetNext")]
+        [HttpGet("Room/Paginator/GetNext")]
+        public string? GetNextPage(int page, string roomName)
+        {
+            return _roomService.Paginator(page, _context, roomName);
+        }
     }
 }

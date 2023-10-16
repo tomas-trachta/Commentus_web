@@ -9,5 +9,6 @@ namespace Commentus_web.Services.Interfaces
         Task<string?> GetNewMessages(HttpContext httpContext, string roomName, TestContext context);
         string? GetNewTasks(HttpContext httpContext, string roomName, TestContext _context);
         void AddNember(string username, string roomName, TestContext _context);
+        string? Paginator(int page, TestContext _context, string roomName);
     }
 }

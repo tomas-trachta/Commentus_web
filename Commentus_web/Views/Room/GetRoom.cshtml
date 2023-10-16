@@ -133,10 +133,19 @@
 
 @section Scripts{
     <script type="text/javascript">
+        let messagePage = 1;
 
         $(document).ready(function(){
             $("#messages").scrollTop($("#messages")[0].scrollHeight);
             receiveNewMessages();
+        });
+
+        $('#messages').scroll(function(){
+            var pos = $('#messages').scrollTop();
+            if(pos == 0){
+                getNextPage();
+                $("#messages").scrollTop(1);
+            }
         });
 
         function sendMessage(){
@@ -206,6 +215,20 @@
                 })
                 .fail(function (data) {
                     alert("failed to get tasks")
+                });
+        }
+
+        function getNextPage() {
+            $.ajax({
+                url: '@Url.ActionLink("GetNextPage")',
+                method: 'GET',
+                data: { page: messagePage, roomName: '@Model.Room.Name' }
+            })
+                .done(function (data) {
+                    if (data != null){
+                        $('#messages').prepend(data);
+                        messagePage++;
+                    }
                 });
         }
 
