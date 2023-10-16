@@ -105,59 +105,7 @@ namespace Commentus_web.Services
             {
                 _clientsContainer.ChangeLastMessageTimeStamp(httpContext, context, context.Rooms.First(x => x.Name == roomName).Id, messages.LastOrDefault()?.Timestamp);
 
-                StringBuilder rString = new();
-
-                string URIPattern = @"^(?:\w+:)?\/\/([^\s\.]+\.\S{2}|localhost[\:?\d]*)\S*$";
-
-                foreach (var message in messages)
-                {
-                    var imgBytes = message.User.ProfilePicture;
-                    string img = imgBytes != null ? Convert.ToBase64String(imgBytes) : "";
-                    string imgUrl = string.Format("data:image/png;base64,{0}", img);
-
-                    byte[] messageBytes = message.Message;
-                    string messageString = Encoding.UTF8.GetString(messageBytes);
-
-                    rString.Append(@"<div class=""row mt-4"">");
-                    rString.Append(@"<div class=""col-1""></div>");
-                    rString.Append($"<small class=\"col-auto text-muted\">{message.User.Name}</small>");
-                    rString.Append($"<small class=\"col-auto text-muted ps-2\">{message.Timestamp}</small>");
-                    rString.Append("</div>");
-                    rString.Append(@"<div class=""row m-0 align-items-start justify-content-start mt-1"">");
-                    rString.Append(@"<div class=""col-auto m-0 p-0 me-4 ms-1"">");
-                    rString.Append(@"<div class=""row p-2 text-white align-items-center justify-content-center"">");
-                    rString.Append($"<div class=\"col-auto\"><img src=\"{imgUrl}\" style=\"width:25px;\" /></div>");
-                    rString.Append("</div></div>");
-                    rString.Append(@"<div class=""col-9 d-flex h-100 align-items-center p-0 ps-2 rounded"" style=""background: #e8e8e8;"">");
-                    if ((messageBytes.Length > 3 && messageBytes[0] == 0xFF && messageBytes[1] == 0xD8
-                                && messageBytes[messageBytes.Length - 2] == 0xFF && messageBytes[messageBytes.Length - 1] == 0xD9)
-                                || (messageBytes[0] == 137 && messageBytes[1] == 80 && messageBytes[2] == 78 && messageBytes[3] == 71
-                                && messageBytes[4] == 13 && messageBytes[5] == 10 && messageBytes[6] == 26 && messageBytes[7] == 10))
-                    {
-                        string image = messageBytes != null ? Convert.ToBase64String(messageBytes) : "";
-                        string imageUrl = string.Format("data:image/png;base64,{0}", Convert.ToBase64String(messageBytes));
-
-                        rString.Append(@"<div class=""col-auto p-0"">");
-                        rString.Append($"<img src=\"{imageUrl}\" />");
-                        rString.Append("</div>");
-                    }
-                    else if (System.Text.RegularExpressions.Regex.IsMatch(messageString, URIPattern))
-                    {
-                        rString.Append(@"<div class=""col-auto p-0"">");
-                        rString.Append($"<img class=\"w-100\" src=\"{messageString}\" />");
-                        rString.Append("</div>");
-                    }
-                    else
-                    {
-                        rString.Append("<span>");
-                        rString.Append(messageString);
-                        rString.Append("</span>");
-                    }
-
-                    rString.Append("</div></div>");
-                }
-
-                return rString.ToString();
+                return ConstructMessages(messages);
             }
             return null;
         }
@@ -213,11 +161,21 @@ namespace Commentus_web.Services
 
         public string? Paginator(int page, TestContext _context, string roomName)
         {
-            var messages = _context.RoomsMessages.Include(m => m.User).Include(m => m.Room).Where(m => m.Room.Name == roomName).OrderByDescending(x => x.Id).Skip(page * PAGE_SIZE).Take(PAGE_SIZE);
+            var messages = _context.RoomsMessages.Include(m => m.User).Include(m => m.Room).Where(m => m.Room.Name == roomName)
+                .OrderByDescending(x => x.Id)
+                .Skip(page * PAGE_SIZE).Take(PAGE_SIZE)
+                .ToList();   
+            
+            return ConstructMessages(messages);
+        }
+
+
+
+        private string? ConstructMessages(IEnumerable<RoomsMessage>? messages)
+        {
+            string URIPattern = @"^(?:\w+:)?\/\/([^\s\.]+\.\S{2}|localhost[\:?\d]*)\S*$";
 
             StringBuilder? rString = messages == null ? null : new();
-
-            string URIPattern = @"^(?:\w+:)?\/\/([^\s\.]+\.\S{2}|localhost[\:?\d]*)\S*$";
 
             foreach (var message in messages)
             {
@@ -263,7 +221,7 @@ namespace Commentus_web.Services
                     rString.Append(messageString);
                     rString.Append("</span>");
                 }
-                
+
                 rString.Append("</div></div>");
             }
 
