@@ -13,6 +13,8 @@ namespace Commentus_web.Networking
 
         public DateTime? LastMessageTimeStamp { get; set; }
 
+        public DateTime? LastTaskTimeStamp { get; set; }
+
         public Client(HttpContext httpContext)
         {
             _serverIpEndpoint = CommunicationProtocol.GetServerIpEdpoint();
@@ -24,6 +26,8 @@ namespace Commentus_web.Networking
             Socket.Connect(_serverIpEndpoint);
 
             LastMessageTimeStamp = default;
+
+            LastTaskTimeStamp = default;
         }
     }
 }

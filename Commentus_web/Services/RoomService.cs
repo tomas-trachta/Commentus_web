@@ -18,8 +18,6 @@ namespace Commentus_web.Services
     {
         private const int PAGE_SIZE = 15;
 
-        private Dictionary<string, DateTime?> _taskTimeStamps { get; set; }
-
         private IClientsContainer _clientsContainer { get; set; }
 
         public RoomService(IClientsContainer clientsContainer)
@@ -121,10 +119,7 @@ namespace Commentus_web.Services
 
             if (tasks.Any())
             {
-                if (_taskTimeStamps.ContainsKey(userName))
-                    _taskTimeStamps[userName] = tasks.LastOrDefault()?.Task.Timestamp;
-                else
-                    _taskTimeStamps.Add(userName, tasks.LastOrDefault()?.Task.Timestamp);
+                _clientsContainer.ChangeLastTaskTimeStamp(httpContext, _context, _context.Rooms.First(x => x.Name == roomName).Id, tasks.LastOrDefault()?.Task.Timestamp);
 
                 StringBuilder rString = new();
 

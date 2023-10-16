@@ -24,5 +24,8 @@ namespace Commentus_web.Extensions
 
         public static DateTime GetLastMessageTimeStamp(this DbSet<RoomsMessage> roomsMessages, int roomId) =>
             roomsMessages.Where(x => x.RoomId == roomId).OrderBy(x => x.Id).Last().Timestamp;
+
+        public static DateTime GetLastTaskTimeStamp(this DbSet<Models.Task> roomsTasks, int roomId) =>
+            roomsTasks.Where(x => x.RoomsId == roomId).OrderBy(x => x.Id).Last().Timestamp;
     }
 }

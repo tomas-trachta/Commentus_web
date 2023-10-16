@@ -7,6 +7,7 @@ namespace Commentus_web.Networking.Interfaces
         void AddClient(HttpContext httpContext);
         void Send(HttpContext httpContext, byte[] dataBuffer);
         void ChangeLastMessageTimeStamp(HttpContext httpContext, TestContext context, int roomId, DateTime? timeStamp = default);
+        void ChangeLastTaskTimeStamp(HttpContext httpContext, TestContext context, int roomId, DateTime? timeStamp = default);
         Task<int> ReceiveMessage(HttpContext httpContext);
         List<Client> Clients { get; }
     }

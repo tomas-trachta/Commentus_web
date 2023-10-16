@@ -47,6 +47,18 @@ namespace Commentus_web.Networking
             }
         }
 
+        public void ChangeLastTaskTimeStamp(HttpContext httpContext, TestContext context, int roomId, DateTime? timeStamp = default)
+        {
+            var name = httpContext.Session.GetString("Name");
+
+            var client = _clients.Where(x => x.Name == name).FirstOrDefault();
+
+            if (client is not null)
+            {
+                client.LastTaskTimeStamp = !timeStamp.Equals(default) ? timeStamp : context.Tasks.GetLastTaskTimeStamp(roomId);
+            }
+        }
+
         public async Task<int> ReceiveMessage(HttpContext httpContext)
         {
             var name = httpContext.Session.GetString("Name");
