@@ -4,7 +4,7 @@ Unfinished web version of [Commentus desktop](https://github.com/Ponny159/Commen
 
 ## Author
 
-This project was created by [@Ponny159 (T. Trachta)](https://www.github.com/ponny159).
+This project was created by [Tomas Trachta](https://www.github.com/tomas-trachta).
 
 ## Preview
 
